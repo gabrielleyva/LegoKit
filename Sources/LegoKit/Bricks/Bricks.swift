@@ -13,13 +13,13 @@ public struct Bricks {
     private static var current = Bricks()
 
     /// A static subscript for updating the value of `Blueprint` instances.
-    static subscript<K>(key: K.Type) -> K.Value where K : Blueprint {
+    public static subscript<K>(key: K.Type) -> K.Value where K : Blueprint {
         get { key.brick }
         set { key.brick = newValue }
     }
 
     /// A static subscript accessor for updating and referencing `Bricks` directly.
-    static subscript<T>(_ keyPath: WritableKeyPath<Bricks, T>) -> T {
+    public static subscript<T>(_ keyPath: WritableKeyPath<Bricks, T>) -> T {
         get { current[keyPath: keyPath] }
         set { current[keyPath: keyPath] = newValue }
     }

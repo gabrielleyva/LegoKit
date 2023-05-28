@@ -33,7 +33,7 @@ public final class Lego<B: Blueprint>: ObservableObject {
     
     // MARK: - Init
     
-    init(_ design: B.Design, blueprint: B,
+    public init(_ design: B.Design, blueprint: B,
          adaptors: [Adaptor<B>] = [],
          enableLogs: Bool = false) {
         self.design = design

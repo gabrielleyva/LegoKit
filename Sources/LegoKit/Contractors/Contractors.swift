@@ -13,13 +13,13 @@ public struct Contractors {
     private static var current = Contractors()
 
     /// A static subscript for updating the value of `Blueprint` instances.
-    static subscript<K>(key: K.Type) -> K.Value where K : Service {
+    public static subscript<K>(key: K.Type) -> K.Value where K : Service {
         get { key.contractor }
         set { key.contractor = newValue }
     }
 
     /// A static subscript accessor for updating and referencing `Contractors` directly.
-    static subscript<T>(_ keyPath: WritableKeyPath<Contractors, T>) -> T {
+    public static subscript<T>(_ keyPath: WritableKeyPath<Contractors, T>) -> T {
         get { current[keyPath: keyPath] }
         set { current[keyPath: keyPath] = newValue }
     }
