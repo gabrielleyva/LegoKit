@@ -14,7 +14,7 @@ public final class Lego<B: Blueprint>: ObservableObject {
     // MARK: - Properties
     
     /// Design
-    @Published private(set) var design: B.Design
+    @Published public private(set) var design: B.Design
     
     /// Blueprint
     private let blueprint: B
