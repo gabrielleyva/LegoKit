@@ -39,14 +39,14 @@ Let's start with a `Design`. A `Design` is the structured data representation of
 When declaring a `Design` it is important to make sure it is conformed to `Equatable`.
 
 ```swift
-    public struct Design: Equatable {
-        var name: String = ""
-        var address: String = ""
-        var city: String = ""
-        var state: String = ""
-        var zipcode: String = ""
-        var images: [Image] = []
-    }
+public struct Design: Equatable {
+    var name: String = ""
+    var address: String = ""
+    var city: String = ""
+    var state: String = ""
+    var zipcode: String = ""
+    var images: [Image] = []
+}
 ```
 
 ## Changes
@@ -56,13 +56,13 @@ A `Change` represents types of requests that will be used to mutate a `Design`. 
 When declaring a `Change` it is important to make sure it is conformed to `Equatable`.
 
 ```swift
-    public enum Change: Equatable {
-        case name(String)
-        case address(String)
-        case city(String)
-        case state(String)
-        case zipcode(String)
-    }
+public enum Change: Equatable {
+    case name(String)
+    case address(String)
+    case city(String)
+    case state(String)
+    case zipcode(String)
+}
 ```
 
 ## Blueprints
@@ -203,7 +203,100 @@ public struct AppBlueprint: Blueprint {
 
 ## Services
 
+```swift
+public struct PermissionsService: Service {
+    
+    public static var contractor: PermissionsService = PermissionsService()
+}
+```
+
+```swift
+public struct PermissionsService: Service {
+
+    ...
+
+    public func requestStatus() -> (camera: PermissionStatus, album: PermissionStatus)  {
+        let camera: PermissionStatus = .init(avAuthorizationStatus: AVCaptureDevice.authorizationStatus(for: .video))
+        let album: PermissionStatus = .init(phAuthorizationStatus: PHPhotoLibrary.authorizationStatus(for: .readWrite))
+        return (camera: camera, album: album)
+    }
+    
+    public func requestCameraAccess() async -> PermissionStatus {
+        return await withCheckedContinuation { continuation in
+            self.requestCaptureAccess(completion: { status in
+                let camera: PermissionStatus = .init(avAuthorizationStatus: status)
+                continuation.resume(returning: camera)
+            })
+        }
+    }
+    
+    private func requestCaptureAccess(completion: @escaping (AVAuthorizationStatus) -> Void) {
+        AVCaptureDevice.requestAccess(for: .video) { granted in
+            var status: AVAuthorizationStatus = .notDetermined
+            if granted {
+                status = .authorized
+            }
+            completion(status)
+        }
+    }
+}
+```
+
+## Contractors
+
+```swift
+public extension Contractors {
+    var permissions: PermissionsService {
+        get { Self[PermissionsService.Value.self] }
+        set { Self[PermissionsService.Value.self] = newValue }
+    }
+}
+```
+
+```swift
+public class PermissionsAdaptor: Adaptor<AppBlueprint> {
+    
+    // MARK: - Contractors
+    
+    @Contractor(\.permissions) private var permissionsService: PermissionsService
+}
+```
+
 ## Adaptors
+
+```swift
+public class PermissionsAdaptor: Adaptor<AppBlueprint> {
+     
+     ...
+
+    // MARK: - Connector
+    
+    public override func connect(_ design: AppBlueprint.Design, on change: AppBlueprint.Change) -> AnyPublisher<AppBlueprint.Change, Never> {
+        return Future<AppBlueprint.Change, Never> { promise in
+            
+            switch change {
+            case .permission(let permissionsChange):
+                switch permissionsChange {
+                case .requestPermissionStatus:
+                    let (camera, album) = self.permissionsService.requestStatus()
+                    promise(.success(.permission(.permissionStatus(camera: camera, album: album))))
+                                        
+                case .requestCameraAccess:
+                    Task {
+                        let camera = await self.permissionsService.requestCameraAccess()
+                        promise(.success(.permission(.cameraAccess(camera))))
+                    }
+                }
+
+            default:
+                break
+            }
+            
+        }
+        .eraseToAnyPublisher()
+    }
+}
+```
 
 # Usage
 
@@ -307,6 +400,13 @@ struct ContentView: View {
 
 # Logging
 
-Every `Lego` you create will have the ability to log the 
+Every `Lego` you create will have the ability to log the changes happening on your designs in a pretty print format.
 
-# Usage
+The logs are disabled by default. If you would like to enable them for a specific `Lego` you can do so by setting the flag through the `init` constructor.
+
+```swift
+.init(.init(),
+      blueprint: AppBlueprint(),
+      adaptors: [PermissionsAdaptor(), ImageAdaptor()],
+      enableLogs: true)
+```
