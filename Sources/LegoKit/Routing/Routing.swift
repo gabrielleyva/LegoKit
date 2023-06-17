@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// A protocol defining how the routing process upates a`RouterState` using a `Route`.
+/// A protocol defining how the routing process upates a `RouterState` using a `Route`.
 public protocol Routing {
     /// Defines all the available routes.
     associatedtype Route
